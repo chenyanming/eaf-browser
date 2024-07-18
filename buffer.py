@@ -94,6 +94,7 @@ class AppBuffer(BrowserBuffer):
         self.pw_autofill_raw = None
 
         self.readability_js = None
+        self.paw_js = None
 
         self.buffer_widget.init_dark_mode_js(__file__,
                                              self.text_selection_color,
@@ -639,6 +640,18 @@ class AppBuffer(BrowserBuffer):
 
         self.buffer_widget.eval_js(self.readability_js)
 
+    def load_paw_js(self):
+        self.buffer_widget.execute_js("console.log('load_paw_js')")
+        if self.paw_js is None:
+            self.paw_js = open(os.path.join(os.path.dirname(__file__),
+                                                    "paw.js"
+                                                    ), encoding="utf-8").read()
+
+        print(self.paw_js)
+        self.buffer_widget.execute_js(f"console.log({self.paw_js})")
+        self.buffer_widget.eval_js(self.paw_js)
+
+
     @interactive(insert_or_do=True)
     def switch_to_reader_mode(self):
         if self.buffer_widget.execute_js("document.getElementById('readability-page-1') != null;"):
@@ -660,6 +673,20 @@ class AppBuffer(BrowserBuffer):
         text = self.buffer_widget.execute_js("new Readability(document).parse().textContent;")
         self.refresh_page()
         eval_in_emacs('eaf--browser-export-text', ["EAF-BROWSER-TEXT-" + self.url, text])
+
+    @interactive(insert_or_do=True)
+    def paw_annotation_mode(self):
+        self.buffer_widget.execute_js("console.log('paw-annotation-mode')")
+        self.load_paw_js()
+        self.buffer_widget.execute_js("paw_annotation_mode();")
+        message_to_emacs("Enable paw-annotation-mode on eaf")
+
+    @interactive(insert_or_do=True)
+    def paw_view_note_in_eaf(self):
+        self.buffer_widget.execute_js("console.log('paw-annotation-mode')")
+        self.load_paw_js()
+        entry = self.buffer_widget.execute_js("paw_new_entry();")
+        eval_in_emacs('paw-view-note-in-eaf', [entry['note'], entry['url'], entry['title'], entry['body']])
 
     @interactive(insert_or_do=True)
     def render_by_eww(self):
