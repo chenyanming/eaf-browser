@@ -704,6 +704,12 @@ class AppBuffer(BrowserBuffer):
         entry = self.buffer_widget.execute_js("paw_new_entry();")
         eval_in_emacs('paw-view-note-in-eaf', [entry['note'], entry['url'], entry['title'], entry['body']])
 
+    @PostGui()
+    def paw_delete_word(self, word):
+        self.buffer_widget.execute_js(f"paw_delete_word('{word}');")
+        message_to_emacs(f"Deleted {word}")
+
+
     @interactive(insert_or_do=True)
     def render_by_eww(self):
         self.load_readability_js()

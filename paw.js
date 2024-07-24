@@ -194,6 +194,11 @@ function init(words) {
 
 }
 
+function paw_delete_word(word) {
+    //取消高亮删除的单词
+    $(`xqdd_highlight_new_word[word='${word}']`).attr("class", "xqdd_highlight_disable");
+}
+
 /**
  * 创建鼠标悬浮气泡
  */
