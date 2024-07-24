@@ -697,6 +697,11 @@ class AppBuffer(BrowserBuffer):
 
         message_to_emacs("Enable paw-annotation-mode on eaf")
 
+    @PostGui()
+    def paw_annotation_mode_disable(self):
+        self.buffer_widget.execute_js("paw_annotation_mode_disable();")
+        message_to_emacs("Disable paw-annotation-mode on eaf")
+
     @interactive(insert_or_do=True)
     def paw_view_note_in_eaf(self):
         self.buffer_widget.execute_js("console.log('paw-annotation-mode')")

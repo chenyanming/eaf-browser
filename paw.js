@@ -176,7 +176,11 @@ function init(words) {
 
     // };
     newWords = words;
-    console.log(newWords);
+    // console.log(newWords);
+
+    // renable the new word css if it exists
+    $(`xqdd_highlight_new_word`).attr("class", "xqdd_highlight_new_word");
+
     highlight(textNodesUnder(document.body));
     //console.log("解析总耗时：" + (new Date().getTime() - before) + " ms")
     console.log("Highlight done");
@@ -197,6 +201,13 @@ function init(words) {
 function paw_delete_word(word) {
     //取消高亮删除的单词
     $(`xqdd_highlight_new_word[word='${word}']`).attr("class", "xqdd_highlight_disable");
+}
+
+
+function paw_annotation_mode_disable() {
+    //取消所有高亮
+    console.log('disable paw-annotation-mode');
+    $(`xqdd_highlight_new_word`).attr("class", "xqdd_highlight_disable");
 }
 
 /**
