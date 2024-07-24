@@ -404,13 +404,18 @@ function highlightNode(texts) {
     //     }
     // }
 
-    //使用split
-    // texts.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-    // var tempTexts = texts.split(/\s/);
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter
-    const segmenter = new Intl.Segmenter([], { granularity: 'word' });
-    const segmentedText = segmenter.segment(texts);
-    const tempTexts = [...segmentedText].filter(s => s.isWordLike).map(s => s.segment);
+    var tempTexts = [];
+    if (window.location.hostname === 'www.lingq.com') {
+        // 使用split, by space
+        texts.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+        tempTexts = texts.split(/\s/);
+    } else {
+        // By word, more accurate, can handle nhk
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter
+        const segmenter = new Intl.Segmenter([], { granularity: 'word' });
+        const segmentedText = segmenter.segment(texts);
+        tempTexts = [...segmentedText].filter(s => s.isWordLike).map(s => s.segment);
+    }
     // console.log(tempTexts)
     for (i in tempTexts) {
         var tempText = tempTexts[i].trim();
