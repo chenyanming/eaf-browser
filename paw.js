@@ -351,7 +351,7 @@ function highlight(nodes) {
         var newNodeChildrens = highlightNode(text);
         var parent_node = node.parentNode;
         //替换新节点
-        if (newNodeChildrens.length == 0) {
+        if (newNodeChildrens === undefined || newNodeChildrens.length == 0) {
             continue;
         } else {
             console.log(newNodeChildrens);
@@ -394,7 +394,13 @@ function highlightNode(texts) {
     // }
 
     //使用split
-    var tempTexts = texts.split(/\s/);
+    // texts.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+    // var tempTexts = texts.split(/\s/);
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter
+    const segmenter = new Intl.Segmenter([], { granularity: 'word' });
+    const segmentedText = segmenter.segment(texts);
+    const tempTexts = [...segmentedText].filter(s => s.isWordLike).map(s => s.segment);
+    // console.log(tempTexts)
     for (i in tempTexts) {
         var tempText = tempTexts[i].trim();
         if (tempText != "") {
@@ -479,6 +485,7 @@ function hightlightText(text) {
  * @returns {Array}
  */
 function textNodesUnder(el) {
+    // https://developer.mozilla.org/en-US/docs/Web/API/Document/createTreeWalker
     var n, a = [],
         walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, mygoodfilter, false);
     while (n = walk.nextNode()) {
@@ -520,6 +527,7 @@ function mygoodfilter(node) {
         "EM",
         "TH",
         "CITE",
+        "RUBY" // nhk.com
     ];
     if (good_tags_list.indexOf(node.parentNode.tagName) !== -1) {
         return NodeFilter.FILTER_ACCEPT;
