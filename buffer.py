@@ -678,7 +678,16 @@ class AppBuffer(BrowserBuffer):
     def paw_annotation_mode(self):
         self.buffer_widget.execute_js("console.log('paw-annotation-mode')")
         self.load_paw_js()
-        self.buffer_widget.execute_js("paw_annotation_mode();")
+        words = {
+            "wordInfos": {
+                "police": {
+                    "word": "police",
+                    "phonetic": "[halo]",
+                    "trans": "你好",
+                }
+            }
+        }
+        self.buffer_widget.execute_js(f"paw_annotation_mode({words});")
         message_to_emacs("Enable paw-annotation-mode on eaf")
 
     @interactive(insert_or_do=True)
