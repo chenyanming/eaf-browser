@@ -8,13 +8,13 @@
 console.log("Hello from paw.js");
 
 function paw_annotation_mode(words) {
-    document.addEventListener('mouseup', async function(e) {
-        var selection = window.getSelection().toString().trim();
-        if (selection.length > 0) { // If some text is selected
-            console.log('Selected text: ' + selection);
-            send_to_paw();
-        }
-    }, true);
+    // document.addEventListener('mouseup', async function(e) {
+    //     var selection = window.getSelection().toString().trim();
+    //     if (selection.length > 0) { // If some text is selected
+    //         console.log('Selected text: ' + selection);
+    //         send_to_paw();
+    //     }
+    // }, true);
 
 
     var x = setTimeout(function(){

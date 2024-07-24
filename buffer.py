@@ -24,6 +24,8 @@ import re
 import threading
 import time
 import urllib
+import sqlite3
+import json
 
 from core.utils import *
 from core.webengine import BrowserBuffer
@@ -674,20 +676,25 @@ class AppBuffer(BrowserBuffer):
         self.refresh_page()
         eval_in_emacs('eaf--browser-export-text', ["EAF-BROWSER-TEXT-" + self.url, text])
 
-    @interactive(insert_or_do=True)
-    def paw_annotation_mode(self):
+    @PostGui()
+    def paw_annotation_mode(self, db):
         self.buffer_widget.execute_js("console.log('paw-annotation-mode')")
         self.load_paw_js()
-        words = {
-            "wordInfos": {
-                "police": {
-                    "word": "police",
-                    "phonetic": "[halo]",
-                    "trans": "你好",
-                }
-            }
-        }
+        paw = Paw(db)
+        words = { "wordInfos":  paw.candidates() }
+        # words = {
+        #     "wordInfos": {
+        #         "police": {
+        #             "word": "police",
+        #             "phonetic": "[halo]",
+        #             "trans": "你好",
+        #         }
+        #     }
+        # }
+        # print(words)
+
         self.buffer_widget.execute_js(f"paw_annotation_mode({words});")
+
         message_to_emacs("Enable paw-annotation-mode on eaf")
 
     @interactive(insert_or_do=True)
@@ -837,3 +844,35 @@ class AdBlockInterceptor(QWebEngineUrlRequestInterceptor):
 
                 # print("Block Ad: ", url)
                 info.block(True)
+
+
+class Paw (object):
+    def __init__ (self, filename, verbose = False):
+        self.__dbname = filename
+        if filename != ':memory:':
+            os.path.abspath(filename)
+        self.__conn = None
+        self.cursor = None
+        self.__verbose = verbose
+        self.__open()
+
+    # 初始化并创建必要的表格和索引
+    def __open (self):
+        self.__conn = sqlite3.connect(self.__dbname)
+        self.__conn.isolation_level = None
+        self.cursor = self.__conn.cursor()
+        fields = ('word', 'exp')
+        self.__fields = tuple([(fields[i], i) for i in range(len(fields))])
+        self.__names = { }
+        for k, v in self.__fields:
+            self.__names[k] = v
+        return True
+
+    def candidates(self):
+        with self.__conn:
+            self.cursor.execute("SELECT * FROM items")
+            items = self.cursor.fetchall()
+            if items is None:
+                raise Exception("No items found")
+            words = { item[0].strip('\"'): { "word": item[0].strip('\"'), "phonetic": "", "trans": "" if item[1] is None else item[1].strip('\"') } for item in items }
+            return words
