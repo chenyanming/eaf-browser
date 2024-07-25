@@ -25,7 +25,7 @@ function paw_annotation_mode(words) {
         if (typeof jQuery !== 'undefined') {
             // do your stuff
             monitor_and_close_premium_popup();
-            single_click_sentence_item();
+            enalbe_clickable_word();
             init(words);
         }
     }, 50);
@@ -225,7 +225,7 @@ function paw_annotation_mode_disable() {
     paw_annotation_mode_mouse = false;
 
     // Disable sentence item click listener
-    disable_sentence_item_click_listener();
+    disable_clickable_word();
 
     //取消所有高亮
     console.log('disable paw-annotation-mode');
@@ -637,12 +637,40 @@ function monitor_and_close_premium_popup () {
     observer.observe(document.body, config);
 }
 
-
 /**
  * when single click the sentence item, send to paw
  */
-function single_click_sentence_item() {
-    $(".sentence-item").click(function() {
+function enalbe_clickable_word() {
+    // let script = document.createElement('script');
+    // script.src = 'https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js';
+    // script.type = 'text/javascript';
+    // document.getElementsByTagName('head')[0].appendChild(script);
+    if (window.location.hostname === 'www3.nhk.or.jp') {
+        $("span").filter(function() {
+            return this.className.match(/color\w/);
+        }).addClass("clickable-word");
+
+    } else if (window.location.hostname === 'www.lingq.com') {
+        $(".sentence-item").addClass("clickable-word");
+    } else {
+        $("p").each(function() {
+            let paragraphText = $(this).text();
+            let segmenter = new Intl.Segmenter([], { granularity: 'word' });
+            let segmentedResult = segmenter.segment(paragraphText);
+            let wrappedText = "";
+            for(let {segment} of segmentedResult) {
+                if (segment.trim() !== "") { // Exclude spaces
+                    wrappedText += `<span class='clickable-word'>${segment}</span>`;
+                } else {
+                    wrappedText += segment;
+                }
+            }
+            $(this).html(wrappedText);
+
+        });
+    }
+
+    $('.clickable-word').click(function() {
         var selection = window.getSelection(),
             range = document.createRange();
         range.selectNodeContents(this);
@@ -650,12 +678,17 @@ function single_click_sentence_item() {
         selection.addRange(range);
         send_to_paw();
     });
+
+    $(".clickable-word").on({
+        mouseover: function() {
+            $(this).css("text-decoration", "underline");
+        },
+        mouseout: function() {
+            $(this).css("text-decoration", "none");
+        }
+    });
 }
 
-
-/**
- * disable the click listener for sentence item
- */
-function disable_sentence_item_click_listener() {
-    $(".sentence-item").off("click");
+function disable_clickable_word() {
+    $(".clickable-word").off("click mouseover mouseout").css("background-color", "");
 }
