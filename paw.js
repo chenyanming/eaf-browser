@@ -32,23 +32,33 @@ function paw_annotation_mode(words) {
 
 }
 
-function send_to_paw() {
-    var selection = window.getSelection().toString();
+function send_to_paw(selectedNode) {
+    console.log("send_to_paw");
+    var selection;
+    if (selectedNode !== undefined) {
+        selection = selectedNode.textContent;
+    } else {
+        selection = window.getSelection().toString();
+    }
     if (selection.length > 0 && paw_annotation_mode_mouse) {
         var url = encodeURIComponent(window.location.href);
         var title = encodeURIComponent(document.title || "[untitled page]");
         var body = encodeURIComponent(selection);
-        var range = window.getSelection().getRangeAt(0);
-        var parent = range.commonAncestorContainer;
-        while (parent.nodeType !== Node.ELEMENT_NODE) {
-            parent = parent.parentNode;
+        var parent;
+        if (window.location.hostname === 'www.lingq.com')  {
+            parent = selectedNode.parentNode;
+        } else {
+            var range = window.getSelection().getRangeAt(0);
+            parent = range.commonAncestorContainer.parentNode;
         }
+
         var note = encodeURIComponent(parent.textContent || "");
         location.href = 'org-protocol://paw?template=w&url=' + url + '&title=' + title + '&note=' + note + '&body=' + body;
     }
 }
 
 function paw_new_entry() {
+    console.log("paw_new_entry");
     paw_annotation_mode_mouse = false;
     var selection = window.getSelection().toString();
     if (selection.length > 0 && !paw_annotation_mode_mouse) {
@@ -57,7 +67,7 @@ function paw_new_entry() {
         var body = selection;
         var range = window.getSelection().getRangeAt(0);
         var parent = range.commonAncestorContainer;
-        while (parent.nodeType !== Node.ELEMENT_NODE) {
+        while (parent.nodeType !== Node.ELEMENT_NODE && parent.className !== 'clickable-word') {
             if (window.location.hostname === 'www.lingq.com')  {
                 parent = parent.parentNode.parentNode.parentNode;
             } else {
@@ -625,11 +635,17 @@ function monitor_and_close_premium_popup () {
             if (mutation.type === 'childList') {
                 var modalContainer = $(".modal-container");
                 if (modalContainer.length > 0) {
-                    var closeButton = modalContainer.find(".button.is-white.is-rounded.has-icon.is-small")[0];
-                    if (closeButton !== 'undefined') {
+                    if (modalContainer.find(".button.is-white.is-rounded.has-icon.is-small")[0] !== 'undefined') {
                         $(".modal-container").find(".button.is-white.is-rounded.has-icon.is-small")[0].click();
                     }
                 }
+                var readerWidget = $(".reader-widget");
+                if (readerWidget.length > 0) {
+                    if (readerWidget.find(".button.widget-close-trigger")[0] !== 'undefined') {
+                        $(".reader-widget").find(".button.widget-close-trigger")[0].click();
+                    }
+                }
+
             }
         });
     });
@@ -637,6 +653,7 @@ function monitor_and_close_premium_popup () {
     observer.observe(document.body, config);
 }
 
+var lingqIsSelectedObserver; // Define in a scope accessible by both functions
 /**
  * when single click the sentence item, send to paw
  */
@@ -651,7 +668,18 @@ function enalbe_clickable_word() {
         }).addClass("clickable-word");
 
     } else if (window.location.hostname === 'www.lingq.com') {
-        $(".sentence-item").addClass("clickable-word");
+        lingqIsSelectedObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    var targetElement = mutation.target;
+                    if (targetElement.tagName.toLowerCase() === 'span' && targetElement.classList.contains('is-selected')) {
+                        // console.log(targetElement);
+                        send_to_paw(targetElement);
+                    }
+                }
+            });
+        });
+        lingqIsSelectedObserver.observe(document.body, { attributes: true, subtree: true });
     } else {
         $("p").each(function() {
             let paragraphText = $(this).text();
@@ -691,4 +719,7 @@ function enalbe_clickable_word() {
 
 function disable_clickable_word() {
     $(".clickable-word").off("click mouseover mouseout").css("background-color", "");
+    if (lingqIsSelectedObserver) {
+        lingqIsSelectedObserver.disconnect();
+    }
 }
