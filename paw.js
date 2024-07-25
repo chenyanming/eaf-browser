@@ -635,13 +635,13 @@ function monitor_and_close_premium_popup () {
             if (mutation.type === 'childList') {
                 var modalContainer = $(".modal-container");
                 if (modalContainer.length > 0) {
-                    if (modalContainer.find(".button.is-white.is-rounded.has-icon.is-small")[0] !== 'undefined') {
+                    if (modalContainer.find(".button.is-white.is-rounded.has-icon.is-small")[0] !== undefined) {
                         $(".modal-container").find(".button.is-white.is-rounded.has-icon.is-small")[0].click();
                     }
                 }
                 var readerWidget = $(".reader-widget");
                 if (readerWidget.length > 0) {
-                    if (readerWidget.find(".button.widget-close-trigger")[0] !== 'undefined') {
+                    if (readerWidget.find(".button.widget-close-trigger")[0] !== undefined) {
                         $(".reader-widget").find(".button.widget-close-trigger")[0].click();
                     }
                 }
