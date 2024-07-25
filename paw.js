@@ -7,28 +7,34 @@
 // });
 console.log("Hello from paw.js");
 
+var paw_annotation_mode_mouse = true;
+
 function paw_annotation_mode(words) {
-    // document.addEventListener('mouseup', async function(e) {
-    //     var selection = window.getSelection().toString().trim();
-    //     if (selection.length > 0) { // If some text is selected
-    //         console.log('Selected text: ' + selection);
-    //         send_to_paw();
-    //     }
-    // }, true);
+    paw_annotation_mode_mouse = true;
+
+    document.addEventListener('mouseup', async function(e) {
+        var selection = window.getSelection().toString().trim();
+        if (selection.length > 0) { // If some text is selected
+            console.log('Selected text: ' + selection);
+            send_to_paw();
+        }
+    }, true);
 
 
-    var x = setTimeout(function(){
-	    if(typeof jQuery !== 'undefined'){
-		    // do your stuff
+    var x = setTimeout(function() {
+        if (typeof jQuery !== 'undefined') {
+            // do your stuff
+            monitor_and_close_premium_popup();
+            single_click_sentence_item();
             init(words);
-	    }
+        }
     }, 50);
 
 }
 
 function send_to_paw() {
     var selection = window.getSelection().toString();
-    if (selection.length > 0) {
+    if (selection.length > 0 && paw_annotation_mode_mouse) {
         var url = encodeURIComponent(window.location.href);
         var title = encodeURIComponent(document.title || "[untitled page]");
         var body = encodeURIComponent(selection);
@@ -43,15 +49,20 @@ function send_to_paw() {
 }
 
 function paw_new_entry() {
+    paw_annotation_mode_mouse = false;
     var selection = window.getSelection().toString();
-    if (selection.length > 0) {
+    if (selection.length > 0 && !paw_annotation_mode_mouse) {
         var url = window.location.href;
         var title = document.title || "[untitled page]";
         var body = selection;
         var range = window.getSelection().getRangeAt(0);
         var parent = range.commonAncestorContainer;
         while (parent.nodeType !== Node.ELEMENT_NODE) {
-            parent = parent.parentNode;
+            if (window.location.hostname === 'www.lingq.com')  {
+                parent = parent.parentNode.parentNode.parentNode;
+            } else {
+                parent = parent.parentNode;
+            }
         }
         var note = parent.textContent || "";
         var data = {
@@ -198,13 +209,24 @@ function init(words) {
 
 }
 
+/*
+ * Hide the word
+ */
 function paw_delete_word(word) {
     //取消高亮删除的单词
     $(`xqdd_highlight_new_word[word='${word}']`).attr("class", "xqdd_highlight_disable");
 }
 
 
+/**
+ * Disable paw-annotation-mode
+ */
 function paw_annotation_mode_disable() {
+    paw_annotation_mode_mouse = false;
+
+    // Disable sentence item click listener
+    disable_sentence_item_click_listener();
+
     //取消所有高亮
     console.log('disable paw-annotation-mode');
     $(`xqdd_highlight_new_word`).attr("class", "xqdd_highlight_disable");
@@ -587,4 +609,53 @@ function setStyle(result) {
     highlightCss += "}";
     bubbleCss += "}";
     // chrome.tabs.insertCSS(null, {code: highlightCss + bubbleCss});
+}
+
+/**
+ * LingQ specific functions
+ *
+ */
+
+/**
+ * Close lingq Go Premium button
+ */
+function monitor_and_close_premium_popup () {
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                var modalContainer = $(".modal-container");
+                if (modalContainer.length > 0) {
+                    var closeButton = modalContainer.find(".button.is-white.is-rounded.has-icon.is-small")[0];
+                    if (closeButton !== 'undefined') {
+                        $(".modal-container").find(".button.is-white.is-rounded.has-icon.is-small")[0].click();
+                    }
+                }
+            }
+        });
+    });
+    var config = { attributes: true, childList: true, subtree: true };
+    observer.observe(document.body, config);
+}
+
+
+/**
+ * when single click the sentence item, send to paw
+ */
+function single_click_sentence_item() {
+    $(".sentence-item").click(function() {
+        var selection = window.getSelection(),
+            range = document.createRange();
+        range.selectNodeContents(this);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        send_to_paw();
+    });
+}
+
+
+/**
+ * disable the click listener for sentence item
+ */
+function disable_sentence_item_click_listener() {
+    $(".sentence-item").off("click");
 }
