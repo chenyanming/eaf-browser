@@ -29,9 +29,10 @@ import json
 
 from core.utils import *
 from core.webengine import BrowserBuffer
-from PyQt6.QtCore import QUrl, pyqtSlot
+from PyQt6.QtCore import QUrl, pyqtSlot, QJsonValue
 from PyQt6.QtGui import QColor
 from PyQt6.QtWebEngineCore import QWebEngineUrlRequestInterceptor
+from PyQt6 import QtCore
 
 found_braveblock = True
 try:
@@ -97,6 +98,7 @@ class AppBuffer(BrowserBuffer):
 
         self.readability_js = None
         self.paw_js = None
+        self.qwebchannel_js = None
 
         self.buffer_widget.init_dark_mode_js(__file__,
                                              self.text_selection_color,
@@ -653,6 +655,17 @@ class AppBuffer(BrowserBuffer):
         self.buffer_widget.execute_js(f"console.log({self.paw_js})")
         self.buffer_widget.eval_js(self.paw_js)
 
+    def load_qwebchannel_js(self):
+        self.buffer_widget.execute_js("console.log('load_qwebchannel_js')")
+        if self.qwebchannel_js is None:
+            self.qwebchannel_js = open(os.path.join(os.path.dirname(__file__),
+                                                    "qwebchannel.js"
+                                                    ), encoding="utf-8").read()
+
+        print(self.qwebchannel_js)
+        self.buffer_widget.execute_js(f"console.log({self.qwebchannel_js})")
+        self.buffer_widget.eval_js(self.qwebchannel_js)
+
 
     @interactive(insert_or_do=True)
     def switch_to_reader_mode(self):
@@ -679,6 +692,7 @@ class AppBuffer(BrowserBuffer):
     @PostGui()
     def paw_annotation_mode(self, db):
         self.buffer_widget.execute_js("console.log('paw-annotation-mode')")
+        self.load_qwebchannel_js()
         self.load_paw_js()
         paw = Paw(db)
         words = { "wordInfos":  paw.candidates() }
@@ -708,6 +722,13 @@ class AppBuffer(BrowserBuffer):
         self.load_paw_js()
         entry = self.buffer_widget.execute_js("paw_new_entry();")
         eval_in_emacs('paw-view-note-in-eaf', [entry['note'], entry['url'], entry['title'], entry['body']])
+
+    @QtCore.pyqtSlot(QJsonValue)
+    def paw_view_note(self, entry):
+        entry = entry.toObject()
+        print("paw_view_note")
+        # print(entry)
+        eval_in_emacs('paw-view-note-in-eaf', [entry['note'].toString(), entry['url'].toString(), entry['title'].toString(), entry['body'].toString()])
 
     @PostGui()
     def paw_delete_word(self, word):

@@ -7,73 +7,86 @@
 // });
 console.log("Hello from paw.js");
 
-var paw_annotation_mode_mouse = true;
 
 function paw_annotation_mode(words) {
-    paw_annotation_mode_mouse = true;
 
-    document.addEventListener('mouseup', async function(e) {
-        var selection = window.getSelection().toString().trim();
-        if (selection.length > 0) { // If some text is selected
-            console.log('Selected text: ' + selection);
-            send_to_paw();
-        }
-    }, true);
+    // document.addEventListener('mouseup', async function(e) {
+    //     var selection = window.getSelection().toString().trim();
+    //     if (selection.length > 0) { // If some text is selected
+    //         console.log('Selected text: ' + selection);
+    //         window.pyobject.paw_view_note(paw_new_entry());
+    //     }
+    // }, true);
 
 
-    var x = setTimeout(function() {
+    setTimeout(function() {
         if (typeof jQuery !== 'undefined') {
-            // do your stuff
             monitor_and_close_premium_popup();
             enalbe_clickable_word();
             init(words);
         }
+        if (typeof QWebChannel !== 'undefined') {
+            new QWebChannel(qt.webChannelTransport, channel => {
+                window.pyobject = channel.objects.pyobject;
+            });
+        }
     }, 50);
 
+
 }
 
-function send_to_paw(selectedNode) {
-    console.log("send_to_paw");
+// function send_to_paw(selectedNode) {
+//     var selection;
+//     if (selectedNode !== undefined) {
+//         selection = selectedNode.textContent;
+//     } else {
+//         selection = window.getSelection().toString();
+//     }
+//     console.log("send_to_paw", selection);
+//     if (selection.length > 0 && paw_annotation_mode_mouse) {
+//         var url = encodeURIComponent(window.location.href);
+//         var title = encodeURIComponent(document.title || "[untitled page]");
+//         var body = encodeURIComponent(selection);
+//         var parent;
+//         if (window.location.hostname === 'www.lingq.com')  {
+//             parent = selectedNode.parentNode;
+//         } else {
+//             var range = window.getSelection().getRangeAt(0);
+//             parent = range.commonAncestorContainer.parentNode;
+//         }
+
+//         var note = encodeURIComponent(parent.textContent || "");
+//         location.href = 'org-protocol://paw?template=w&url=' + url + '&title=' + title + '&note=' + note + '&body=' + body;
+//     }
+// }
+
+function paw_new_entry(selectedNode) {
+    console.log("paw_new_entry", selectedNode);
     var selection;
     if (selectedNode !== undefined) {
+        // get the passed node textContent directly
         selection = selectedNode.textContent;
     } else {
+        // get the selected node textContent
         selection = window.getSelection().toString();
     }
-    if (selection.length > 0 && paw_annotation_mode_mouse) {
-        var url = encodeURIComponent(window.location.href);
-        var title = encodeURIComponent(document.title || "[untitled page]");
-        var body = encodeURIComponent(selection);
-        var parent;
-        if (window.location.hostname === 'www.lingq.com')  {
-            parent = selectedNode.parentNode;
-        } else {
-            var range = window.getSelection().getRangeAt(0);
-            parent = range.commonAncestorContainer.parentNode;
-        }
-
-        var note = encodeURIComponent(parent.textContent || "");
-        location.href = 'org-protocol://paw?template=w&url=' + url + '&title=' + title + '&note=' + note + '&body=' + body;
-    }
-}
-
-function paw_new_entry() {
-    console.log("paw_new_entry");
-    paw_annotation_mode_mouse = false;
-    var selection = window.getSelection().toString();
-    if (selection.length > 0 && !paw_annotation_mode_mouse) {
+    if (selection.length > 0) {
         var url = window.location.href;
         var title = document.title || "[untitled page]";
         var body = selection;
-        var range = window.getSelection().getRangeAt(0);
-        var parent = range.commonAncestorContainer;
-        while (parent.nodeType !== Node.ELEMENT_NODE && parent.className !== 'clickable-word') {
-            if (window.location.hostname === 'www.lingq.com')  {
-                parent = parent.parentNode.parentNode.parentNode;
-            } else {
-                parent = parent.parentNode;
-            }
+        var parent;
+        if (selectedNode !== undefined) {
+            // use the passed node's parentNode directly
+            parent = selectedNode.parentNode;
+        } else {
+            // get the selected node's parentNode
+            parent = window.getSelection().getRangeAt(0).commonAncestorContainer.parentNode;
         }
+        // skip clicabble-word and get until p tag
+        while (parent.className === 'clickable-word' || parent.tagName !== 'P') {
+            parent = parent.parentNode;
+        }
+
         var note = parent.textContent || "";
         var data = {
             "url": url,
@@ -92,7 +105,6 @@ var s = document.createElement("script");
 s.src = "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js";
 s.onload = function(e){ /* now that its loaded, do something */ };
 document.head.appendChild(s);
-
 
 // Your CSS as text
 var styles = `
@@ -232,7 +244,6 @@ function paw_delete_word(word) {
  * Disable paw-annotation-mode
  */
 function paw_annotation_mode_disable() {
-    paw_annotation_mode_mouse = false;
 
     // Disable sentence item click listener
     disable_clickable_word();
@@ -674,7 +685,7 @@ function enalbe_clickable_word() {
                     var targetElement = mutation.target;
                     if (targetElement.tagName.toLowerCase() === 'span' && targetElement.classList.contains('is-selected')) {
                         // console.log(targetElement);
-                        send_to_paw(targetElement);
+                        window.pyobject.paw_view_note(paw_new_entry(targetElement));
                     }
                 }
             });
@@ -704,7 +715,7 @@ function enalbe_clickable_word() {
         range.selectNodeContents(this);
         selection.removeAllRanges();
         selection.addRange(range);
-        send_to_paw();
+        window.pyobject.paw_view_note(paw_new_entry());
     });
 
     $(".clickable-word").on({
