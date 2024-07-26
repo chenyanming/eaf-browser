@@ -82,6 +82,12 @@ function paw_new_entry(selectedNode) {
             // get the selected node's parentNode
             parent = window.getSelection().getRangeAt(0).commonAncestorContainer.parentNode;
         }
+
+        // get a element node first
+        while (parent.nodeType !== Node.ELEMENT_NODE) {
+            parent = parent.parentNode;
+        }
+
         // skip clicabble-word and get until p tag
         while (parent.className === 'clickable-word' || parent.tagName !== 'P') {
             parent = parent.parentNode;
