@@ -88,9 +88,13 @@ function paw_new_entry(selectedNode) {
             parent = parent.parentNode;
         }
 
-        // skip clicabble-word and get until p tag
-        while (parent.className === 'clickable-word' || parent.tagName !== 'P') {
-            parent = parent.parentNode;
+        // get until p tag
+        var p_tag_parent = parent;
+        while (p_tag_parent.tagName !== undefined && p_tag_parent.tagName !== 'P') {
+            p_tag_parent = p_tag_parent.parentNode;
+        }
+        if (p_tag_parent !== document) {
+            parent = p_tag_parent;
         }
 
         var note = parent.textContent || "";
