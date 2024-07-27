@@ -3,7 +3,7 @@ console.log("Hello from paw.js");
 function paw_annotation_mode(words) {
     $(function () {
         monitor_and_close_premium_popup();
-        enalbe_clickable_word();
+        enable_clickable_word();
         init(words);
         new QWebChannel(qt.webChannelTransport, channel => {
             window.pyobject = channel.objects.pyobject;
@@ -170,7 +170,7 @@ function init(words) {
     // renable the new word css if it exists
     $(`xqdd_highlight_new_word`).attr("class", "xqdd_highlight_new_word");
 
-    highlight(textNodesUnder(document.body));
+    highlight(textNodesUnder(document.body, mygoodfilter));
     //console.log("解析总耗时：" + (new Date().getTime() - before) + " ms")
     console.log("Highlight done");
 
@@ -499,10 +499,10 @@ function hightlightText(text) {
  * @param el
  * @returns {Array}
  */
-function textNodesUnder(el) {
+function textNodesUnder(el, filter) {
     // https://developer.mozilla.org/en-US/docs/Web/API/Document/createTreeWalker
     var n, a = [],
-        walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, mygoodfilter, false);
+        walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, filter, false);
     while (n = walk.nextNode()) {
         a.push(n);
     }
@@ -550,6 +550,49 @@ function mygoodfilter(node) {
     return NodeFilter.FILTER_SKIP;
 }
 
+
+
+/**
+ * 节点过滤器
+ * @param node
+ * @returns {number}
+ */
+function clickablefilter(node) {
+    var good_tags_list = [
+        "PRE",
+        // "A",
+        "P",
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "B",
+        "SMALL",
+        "STRONG",
+        "Q",
+        "DIV",
+        "SPAN",
+        "LI",
+        "TD",
+        "OPTION",
+        "I",
+        "BUTTON",
+        "UL",
+        "CODE",
+        "EM",
+        "TH",
+        "CITE",
+        "RUBY" // nhk.com
+    ];
+    if (good_tags_list.indexOf(node.parentNode.tagName) !== -1) {
+        return NodeFilter.FILTER_ACCEPT;
+    }
+    return NodeFilter.FILTER_SKIP;
+}
+
+
 /**
  * 节点插入时判断高亮
  * @param event
@@ -571,7 +614,7 @@ function onNodeInserted(event) {
         return;
     }
     if (!classattr || !classattr.startsWith("xqdd")) {
-        highlight(textNodesUnder(inobj));
+        highlight(textNodesUnder(inobj, mygoodfilter));
     }
 }
 
@@ -620,21 +663,34 @@ function monitor_and_close_premium_popup () {
     observer.observe(document.body, config);
 }
 
+
+function addInteractivity (selector) {
+    $(selector).each(function() {
+        const nodes = textNodesUnder(this, clickablefilter);
+        nodes.forEach(function(node) {
+            let segmenter = new Intl.Segmenter([], { granularity: 'word' });
+            let segments = segmenter.segment(node.textContent);
+            let wrappedText = "";
+            for(let {segment} of segments) {
+                if (segment.trim() !== "") { // Exclude spaces
+                    wrappedText += `<span class='clickable-word'>${segment}</span>`;
+                } else {
+                    wrappedText += segment;
+                }
+            }
+            $(node).replaceWith($.parseHTML(wrappedText));
+        });
+    });
+};
+
 var lingqIsSelectedObserver; // Define in a scope accessible by both functions
 /**
  * when single click the sentence item, send to paw
  */
-function enalbe_clickable_word() {
-    // let script = document.createElement('script');
-    // script.src = 'https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js';
-    // script.type = 'text/javascript';
-    // document.getElementsByTagName('head')[0].appendChild(script);
-    if (window.location.hostname === 'www3.nhk.or.jp') {
-        $("span").filter(function() {
-            return this.className.match(/color\w/);
-        }).addClass("clickable-word");
-
-    } else if (window.location.hostname === 'www.lingq.com') {
+function enable_clickable_word() {
+    if(window.location.hostname === 'www3.nhk.or.jp') {
+        addInteractivity("span[class^='color']");
+    } else if(window.location.hostname === 'www.lingq.com') {
         lingqIsSelectedObserver = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
@@ -648,21 +704,7 @@ function enalbe_clickable_word() {
         });
         lingqIsSelectedObserver.observe(document.body, { attributes: true, subtree: true });
     } else {
-        $("p").each(function() {
-            let paragraphText = $(this).text();
-            let segmenter = new Intl.Segmenter([], { granularity: 'word' });
-            let segmentedResult = segmenter.segment(paragraphText);
-            let wrappedText = "";
-            for(let {segment} of segmentedResult) {
-                if (segment.trim() !== "") { // Exclude spaces
-                    wrappedText += `<span class='clickable-word'>${segment}</span>`;
-                } else {
-                    wrappedText += segment;
-                }
-            }
-            $(this).html(wrappedText);
-
-        });
+        addInteractivity(document.body);
     }
 
     $('.clickable-word').click(function() {
