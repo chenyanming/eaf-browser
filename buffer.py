@@ -99,6 +99,8 @@ class AppBuffer(BrowserBuffer):
         self.readability_js = None
         self.paw_js = None
         self.qwebchannel_js = None
+        self.jquery_js = None
+        self.is_paw_annotation_mode = True # enable paw annotation mode at the begnning
 
         self.buffer_widget.init_dark_mode_js(__file__,
                                              self.text_selection_color,
@@ -283,6 +285,10 @@ class AppBuffer(BrowserBuffer):
 
         # Update input focus state.
         self.is_focus()
+
+        # Run paw annotation mode after page loaded
+        if self.is_paw_annotation_mode:
+            self.paw_annotation_mode(get_emacs_var("paw-db-file"))
 
     def update_position(self):
         mode_line_height = get_emacs_func_cache_result("eaf-get-mode-line-height", [])
@@ -651,7 +657,7 @@ class AppBuffer(BrowserBuffer):
                                                     "paw.js"
                                                     ), encoding="utf-8").read()
 
-        print(self.paw_js)
+        # print(self.paw_js)
         self.buffer_widget.execute_js(f"console.log({self.paw_js})")
         self.buffer_widget.eval_js(self.paw_js)
 
@@ -662,9 +668,20 @@ class AppBuffer(BrowserBuffer):
                                                     "qwebchannel.js"
                                                     ), encoding="utf-8").read()
 
-        print(self.qwebchannel_js)
+        # print(self.qwebchannel_js)
         self.buffer_widget.execute_js(f"console.log({self.qwebchannel_js})")
         self.buffer_widget.eval_js(self.qwebchannel_js)
+
+    def load_jquery_js(self):
+        self.buffer_widget.execute_js("console.log('load_jquery_js')")
+        if self.jquery_js is None:
+            self.jquery_js = open(os.path.join(os.path.dirname(__file__),
+                                                    "jquery-3.3.1.js"
+                                                    ), encoding="utf-8").read()
+
+        # print(self.jquery_js)
+        self.buffer_widget.execute_js(f"console.log({self.jquery_js})")
+        self.buffer_widget.eval_js(self.jquery_js)
 
 
     @interactive(insert_or_do=True)
@@ -691,8 +708,10 @@ class AppBuffer(BrowserBuffer):
 
     @PostGui()
     def paw_annotation_mode(self, db):
+        self.is_paw_annotation_mode = True;
         self.buffer_widget.execute_js("console.log('paw-annotation-mode')")
         self.load_qwebchannel_js()
+        self.load_jquery_js()
         self.load_paw_js()
         paw = Paw(db)
         words = { "wordInfos":  paw.candidates() }
@@ -713,12 +732,14 @@ class AppBuffer(BrowserBuffer):
 
     @PostGui()
     def paw_annotation_mode_disable(self):
+        self.is_paw_annotation_mode = False;
         self.buffer_widget.execute_js("paw_annotation_mode_disable();")
         message_to_emacs("Disable paw-annotation-mode on eaf")
 
     @interactive(insert_or_do=True)
     def paw_view_note_in_eaf(self):
         self.buffer_widget.execute_js("console.log('paw-annotation-mode')")
+        self.load_jquery_js()
         self.load_paw_js()
         entry = self.buffer_widget.execute_js("paw_new_entry();")
         eval_in_emacs('paw-view-note-in-eaf', [entry['note'], entry['url'], entry['title'], entry['body']])

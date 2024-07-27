@@ -1,64 +1,15 @@
-// document.addEventListener('keydown', async function(e) {
-//     if (e.key === "s") {
-//         console.log("hello world");
-//         console.log("'s' key was pressed");
-//         send_to_paw();
-//     }
-// });
 console.log("Hello from paw.js");
 
-
 function paw_annotation_mode(words) {
-
-    // document.addEventListener('mouseup', async function(e) {
-    //     var selection = window.getSelection().toString().trim();
-    //     if (selection.length > 0) { // If some text is selected
-    //         console.log('Selected text: ' + selection);
-    //         window.pyobject.paw_view_note(paw_new_entry());
-    //     }
-    // }, true);
-
-
-    setTimeout(function() {
-        if (typeof jQuery !== 'undefined') {
-            monitor_and_close_premium_popup();
-            enalbe_clickable_word();
-            init(words);
-        }
-        if (typeof QWebChannel !== 'undefined') {
-            new QWebChannel(qt.webChannelTransport, channel => {
-                window.pyobject = channel.objects.pyobject;
-            });
-        }
-    }, 50);
-
-
+    $(function () {
+        monitor_and_close_premium_popup();
+        enalbe_clickable_word();
+        init(words);
+        new QWebChannel(qt.webChannelTransport, channel => {
+            window.pyobject = channel.objects.pyobject;
+        });
+    });
 }
-
-// function send_to_paw(selectedNode) {
-//     var selection;
-//     if (selectedNode !== undefined) {
-//         selection = selectedNode.textContent;
-//     } else {
-//         selection = window.getSelection().toString();
-//     }
-//     console.log("send_to_paw", selection);
-//     if (selection.length > 0 && paw_annotation_mode_mouse) {
-//         var url = encodeURIComponent(window.location.href);
-//         var title = encodeURIComponent(document.title || "[untitled page]");
-//         var body = encodeURIComponent(selection);
-//         var parent;
-//         if (window.location.hostname === 'www.lingq.com')  {
-//             parent = selectedNode.parentNode;
-//         } else {
-//             var range = window.getSelection().getRangeAt(0);
-//             parent = range.commonAncestorContainer.parentNode;
-//         }
-
-//         var note = encodeURIComponent(parent.textContent || "");
-//         location.href = 'org-protocol://paw?template=w&url=' + url + '&title=' + title + '&note=' + note + '&body=' + body;
-//     }
-// }
 
 function paw_new_entry(selectedNode) {
     console.log("paw_new_entry", selectedNode);
@@ -110,11 +61,6 @@ function paw_new_entry(selectedNode) {
         return "";
     }
 }
-
-var s = document.createElement("script");
-s.src = "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js";
-s.onload = function(e){ /* now that its loaded, do something */ };
-document.head.appendChild(s);
 
 // Your CSS as text
 var styles = `
