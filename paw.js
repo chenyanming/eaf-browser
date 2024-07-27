@@ -5,9 +5,10 @@ function paw_annotation_mode(words) {
         monitor_and_close_premium_popup();
         enable_clickable_word();
         init(words);
-        new QWebChannel(qt.webChannelTransport, channel => {
-            window.pyobject = channel.objects.pyobject;
-        });
+    });
+
+    new QWebChannel(qt.webChannelTransport, channel => {
+        window.pyobject = channel.objects.pyobject;
     });
 }
 
