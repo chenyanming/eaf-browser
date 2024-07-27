@@ -673,15 +673,19 @@ class AppBuffer(BrowserBuffer):
         self.buffer_widget.eval_js(self.qwebchannel_js)
 
     def load_jquery_js(self):
-        self.buffer_widget.execute_js("console.log('load_jquery_js')")
-        if self.jquery_js is None:
-            self.jquery_js = open(os.path.join(os.path.dirname(__file__),
-                                                    "jquery-3.3.1.js"
-                                                    ), encoding="utf-8").read()
+        is_jquery_loaded = self.buffer_widget.execute_js("typeof jQuery !== 'undefined'")
+        if is_jquery_loaded:
+            self.buffer_widget.execute_js("console.log('use original jquery')")
+        else:
+            self.buffer_widget.execute_js("console.log('load_jquery_js')")
+            if self.jquery_js is None:
+                self.jquery_js = open(os.path.join(os.path.dirname(__file__),
+                                                        "jquery-3.7.1.min.js"
+                                                        ), encoding="utf-8").read()
 
-        # print(self.jquery_js)
-        self.buffer_widget.execute_js(f"console.log({self.jquery_js})")
-        self.buffer_widget.eval_js(self.jquery_js)
+            # print(self.jquery_js)
+            self.buffer_widget.execute_js(f"console.log({self.jquery_js})")
+            self.buffer_widget.eval_js(self.jquery_js)
 
 
     @interactive(insert_or_do=True)
@@ -733,6 +737,7 @@ class AppBuffer(BrowserBuffer):
     @PostGui()
     def paw_annotation_mode_disable(self):
         self.is_paw_annotation_mode = False;
+        self.load_paw_js()
         self.buffer_widget.execute_js("paw_annotation_mode_disable();")
         message_to_emacs("Disable paw-annotation-mode on eaf")
 
@@ -748,8 +753,9 @@ class AppBuffer(BrowserBuffer):
     def paw_view_note(self, entry):
         entry = entry.toObject()
         print("paw_view_note")
-        # print(entry)
-        eval_in_emacs('paw-view-note-in-eaf', [entry['note'].toString(), entry['url'].toString(), entry['title'].toString(), entry['body'].toString()])
+        if entry is not None:
+            # print(entry)
+            eval_in_emacs('paw-view-note-in-eaf', [entry['note'].toString(), entry['url'].toString(), entry['title'].toString(), entry['body'].toString()])
 
     @PostGui()
     def paw_delete_word(self, word):

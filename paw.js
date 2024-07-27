@@ -448,7 +448,7 @@ function highlightNode(texts) {
                 }
                 if (currPos == 0) {
                     // wordxx类型
-                    newNodeChildrens.push(hightlightText(word));
+                    newNodeChildrens.push(highlightText(word));
                 } else {
                     //xxwordxx类型
                     // var preText = remainTexts.slice(0, currPos)
@@ -458,7 +458,7 @@ function highlightNode(texts) {
                     // } else {
                     newNodeChildrens.push(document.createTextNode(remainTexts.slice(0, currPos)));
                     // }
-                    newNodeChildrens.push(hightlightText(word));
+                    newNodeChildrens.push(highlightText(word));
                 }
                 // chrome.runtime.sendMessage({type: "count", word})
             } else {
@@ -485,8 +485,8 @@ function highlightNode(texts) {
  * @param text
  * @returns {*}
  */
-function hightlightText(text) {
-    // console.log("hightlightText");
+function highlightText(text) {
+    // console.log("highlightText");
     //注意jqury对象转为dom对象使用[0]或者.get(0)
     return $("<xqdd_highlight_new_word>")
         .attr("word", text.toLowerCase())
@@ -614,6 +614,9 @@ function onNodeInserted(event) {
     } catch (e) {
         return;
     }
+    if (!classattr || !classattr.startsWith("xqaa")) {
+        transformNodes(textNodesUnder(inobj, clickablefilter));
+    }
     if (!classattr || !classattr.startsWith("xqdd")) {
         highlight(textNodesUnder(inobj, mygoodfilter));
     }
@@ -665,24 +668,137 @@ function monitor_and_close_premium_popup () {
 }
 
 
-function addInteractivity (selector) {
+function transformNodeBySelector (selector) {
     $(selector).each(function() {
-        const nodes = textNodesUnder(this, clickablefilter);
-        nodes.forEach(function(node) {
-            let segmenter = new Intl.Segmenter([], { granularity: 'word' });
-            let segments = segmenter.segment(node.textContent);
-            let wrappedText = "";
-            for(let {segment} of segments) {
-                if (segment.trim() !== "") { // Exclude spaces
-                    wrappedText += `<span class='clickable-word'>${segment}</span>`;
-                } else {
-                    wrappedText += segment;
-                }
-            }
-            $(node).replaceWith($.parseHTML(wrappedText));
-        });
+        transformNodes(textNodesUnder(this, clickablefilter));
     });
 };
+
+function transformNodes (nodes) {
+    for (var i = 0; i < nodes.length; i++) {
+        var node = nodes[i];
+        var text = node.textContent;
+        if (text.trim() == "") {
+            continue;
+        }
+        //处理单个节点
+        //新节点的内容
+        var newNodeChildrens = transformNode(text);
+        var parent_node = node.parentNode;
+        //替换新节点
+        if (newNodeChildrens === undefined || newNodeChildrens.length == 0) {
+            continue;
+        } else {
+            // console.log(newNodeChildrens);
+        }
+        //处理a标签显示异常
+        if (parent_node.tagName.toLowerCase() == "a") {
+            parent_node.style.display = "inline-block";
+            parent_node.style.margin = "auto";
+        }
+        for (var j = 0; j < newNodeChildrens.length; j++) {
+            parent_node.insertBefore(newNodeChildrens[j], node);
+        }
+        parent_node.removeChild(node);
+    }
+
+
+}
+
+function transformNode(texts) {
+    // console.log("highlightNode");
+    // return [$("<span>").css("background", "red").text(texts)[0]]
+    //将句子解析成待检测单词列表
+    var words = [];
+    //使用indexof
+    //  var tempTexts = texts
+    // while (tempTexts.length > 0) {
+    //     tempTexts = tempTexts.trim()
+    //     var pos = tempTexts.indexOf(" ")
+    //     if (pos < 0) {
+    //         words.push(tempTexts)
+    //         break
+    //     } else {
+    //         words.push(tempTexts.slice(0, pos))
+    //         tempTexts = tempTexts.slice(pos)
+    //     }
+    // }
+
+    var tempTexts = [];
+    if (window.location.hostname === 'www.lingq.com') {
+        // 使用split, by space
+        texts.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+        tempTexts = texts.split(/\s/);
+    } else {
+        // By word, more accurate, can handle nhk
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter
+        const segmenter = new Intl.Segmenter([], { granularity: 'word' });
+        const segmentedText = segmenter.segment(texts);
+        tempTexts = [...segmentedText].filter(s => s.isWordLike).map(s => s.segment);
+    }
+    // console.log(tempTexts)
+    for (i in tempTexts) {
+        var tempText = tempTexts[i].trim();
+        if (tempText != "") {
+            words.push(tempText);
+        }
+    }
+
+    if (words.length >= 1) {
+        //处理后结果
+        var newNodeChildrens = [];
+        //剩下未处理的字符串
+        var remainTexts = texts;
+        //已处理部分字符串
+        var checkedText = "";
+        for (var i = 0; i < words.length; i++) {
+            var word = words[i];
+            //当前所处位置
+            var currPos = remainTexts.indexOf(word);
+            //匹配单词
+            //匹配成功
+            //添加已处理部分到节点
+            if (checkedText != "") {
+                newNodeChildrens.push(document.createTextNode(checkedText));
+                checkedText = "";
+            }
+            if (currPos == 0) {
+                // wordxx类型
+                newNodeChildrens.push(transformText(word));
+            } else {
+                //xxwordxx类型
+                // var preText = remainTexts.slice(0, currPos)
+                // if (i == 0 && preText.trim() == " ") {
+                //     //处理<xx> <xxx>之间的空格问题
+                //     newNodeChildrens.push($("<span>").text(preText)[0])
+                // } else {
+                newNodeChildrens.push(document.createTextNode(remainTexts.slice(0, currPos)));
+                // }
+                newNodeChildrens.push(transformText(word));
+            }
+                // chrome.runtime.sendMessage({type: "count", word})
+            //删除已处理的字符(到当前单词的位置)
+            remainTexts = remainTexts.slice(currPos + word.length);
+        }
+        //处理最末尾
+        if (newNodeChildrens.length != 0) {
+            if (checkedText != "") {
+                newNodeChildrens.push(document.createTextNode(checkedText));
+            }
+            newNodeChildrens.push(document.createTextNode(remainTexts));
+        }
+    }
+    return newNodeChildrens;
+}
+
+
+function transformText (text) {
+    // console.log("transformText");
+    //注意jqury对象转为dom对象使用[0]或者.get(0)
+    return $("<span>")
+        .attr("class", "xqaa_clickable_word")
+        .text(text)[0];
+}
 
 var lingqIsSelectedObserver; // Define in a scope accessible by both functions
 /**
@@ -690,7 +806,7 @@ var lingqIsSelectedObserver; // Define in a scope accessible by both functions
  */
 function enable_clickable_word() {
     if(window.location.hostname === 'www3.nhk.or.jp') {
-        addInteractivity("span[class^='color']");
+        transformNodeBySelector("span[class^='color']");
     } else if(window.location.hostname === 'www.lingq.com') {
         lingqIsSelectedObserver = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
@@ -705,10 +821,14 @@ function enable_clickable_word() {
         });
         lingqIsSelectedObserver.observe(document.body, { attributes: true, subtree: true });
     } else {
-        addInteractivity(document.body);
+        transformNodeBySelector(document.body);
     }
 
-    $('.clickable-word').click(function() {
+    load_clickable_word_events();
+}
+
+function load_clickable_word_events() {
+    $(document).on('click', '.xqaa_clickable_word', function() {
         var selection = window.getSelection(),
             range = document.createRange();
         range.selectNodeContents(this);
@@ -716,19 +836,18 @@ function enable_clickable_word() {
         selection.addRange(range);
         window.pyobject.paw_view_note(paw_new_entry());
     });
-
-    $(".clickable-word").on({
+    $(document).on({
         mouseover: function() {
             $(this).css("text-decoration", "underline");
         },
         mouseout: function() {
             $(this).css("text-decoration", "none");
         }
-    });
+    }, '.xqaa_clickable_word');
 }
 
 function disable_clickable_word() {
-    $(".clickable-word").off("click mouseover mouseout").css("background-color", "");
+    $(".xqaa_clickable_word").off("click mouseover mouseout").css("background-color", "");
     if (lingqIsSelectedObserver) {
         lingqIsSelectedObserver.disconnect();
     }
