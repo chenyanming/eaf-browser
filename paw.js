@@ -834,7 +834,10 @@ function load_clickable_word_events() {
         range.selectNodeContents(this);
         selection.removeAllRanges();
         selection.addRange(range);
-        window.pyobject.paw_view_note(paw_new_entry());
+        var entry = paw_new_entry();
+        if (entry !== "") {
+            window.pyobject.paw_view_note(entry);
+        }
     });
     $(document).on({
         mouseover: function() {
