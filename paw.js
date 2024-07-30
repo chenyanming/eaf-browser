@@ -805,6 +805,7 @@ var lingqIsSelectedObserver; // Define in a scope accessible by both functions
  * when single click the sentence item, send to paw
  */
 function enable_clickable_word() {
+    disable_clickable_word();
     if(window.location.hostname === 'www3.nhk.or.jp') {
         transformNodeBySelector("span[class^='color']");
     } else if(window.location.hostname === 'www.lingq.com') {
@@ -828,9 +829,6 @@ function enable_clickable_word() {
 }
 
 function load_clickable_word_events() {
-    // Remove event handlers if they already exist.
-    $(document).off('click', '.xqaa_clickable_word');
-    $(document).off('mouseover mouseout', '.xqaa_clickable_word');
     $(document).on('click', '.xqaa_clickable_word', function() {
         var selection = window.getSelection(),
             range = document.createRange();
@@ -858,4 +856,12 @@ function disable_clickable_word() {
     if (lingqIsSelectedObserver) {
         lingqIsSelectedObserver.disconnect();
     }
+    $(".xqaa_clickable_word").each(function() {
+        var $this = $(this);
+        $this.replaceWith($this.html());
+    });
+    $(".xqdd_highlight_new_word").each(function() {
+        var $this = $(this);
+        $this.replaceWith($this.html());
+    });
 }
