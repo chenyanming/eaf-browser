@@ -754,7 +754,6 @@ class AppBuffer(BrowserBuffer):
         entry = entry.toObject()
         print("paw_view_note")
         if entry is not None:
-            # print(entry)
             eval_in_emacs('paw-view-note-in-eaf', [entry['note'].toString(), entry['url'].toString(), entry['title'].toString(), entry['body'].toString()])
 
     @PostGui()

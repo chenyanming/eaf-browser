@@ -828,6 +828,9 @@ function enable_clickable_word() {
 }
 
 function load_clickable_word_events() {
+    // Remove event handlers if they already exist.
+    $(document).off('click', '.xqaa_clickable_word');
+    $(document).off('mouseover mouseout', '.xqaa_clickable_word');
     $(document).on('click', '.xqaa_clickable_word', function() {
         var selection = window.getSelection(),
             range = document.createRange();
@@ -850,7 +853,8 @@ function load_clickable_word_events() {
 }
 
 function disable_clickable_word() {
-    $(".xqaa_clickable_word").off("click mouseover mouseout").css("background-color", "");
+    $(document).off('click', '.xqaa_clickable_word');
+    $(document).off('mouseover mouseout', '.xqaa_clickable_word');
     if (lingqIsSelectedObserver) {
         lingqIsSelectedObserver.disconnect();
     }
