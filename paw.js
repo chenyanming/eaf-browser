@@ -3,7 +3,7 @@ console.log("Hello from paw.js");
 function paw_annotation_mode(words) {
     $(function () {
         monitor_and_close_premium_popup();
-        enable_clickable_word();
+        // enable_clickable_word();
         init(words);
     });
 
@@ -66,34 +66,67 @@ function paw_new_entry(selectedNode) {
 // Your CSS as text
 var styles = `
     .xqdd_highlight_disable {
-
     }
 
     .xqdd_highlight_new_word {
         background-color: #ffe895;
     }
 
-
     .xqdd_bubble {
         background-color: #FFE4C4;
         flex-direction: column;
-        width: 200px;
-        align-items: center;
+        max-width: 300px;
+        align-items: flex-start;
         position: fixed;
         display: none;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         z-index: 1000000;
+        font-family: 'Arial', sans-serif;
     }
-    .xqdd_bubble_word{
+    .xqdd_bubble.show {
+        display: block;
+    }
+    .xqdd_bubble_word {
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
-        word-break: break-all;
+        word-break: break-word;
+        margin-bottom: 5px;
+        font-size: 16px;
     }
-
-    .xqdd_bubble_word .xqdd_bubble_trans {
-        width: auto;
-        height: auto;
+    .xqdd_bubble_word span {
+        font-weight: bold;
+        font-size: 20px;
+        margin-bottom: 5px;
+    }
+    .xqdd_bubble_exp {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 8px;
+        color: #333;
+        font-style: italic;
+        font-size: 14px;
+    }
+    .xqdd_bubble_origin_path {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 8px;
+        color: #777;
+        font-size: 14px;
+    }
+    .xqdd_bubble_note {
+        display: flex;
+        align-items: flex-start;
+        color: #555;
+        font-size: 14px;
+    }
+    /* Adding hover effect */
+    .word:hover .xqdd_bubble {
+        display: flex;
     }
 
     .xqdd_bubble_delete {
@@ -107,6 +140,21 @@ var styles = `
     .xqdd_bubble_delete:hover {
         background-color: #e81123;
         color: white;
+    }
+    /* Add check button styles */
+    .xqdd_bubble_check {
+        position: absolute;
+        color: rgba(255, 255, 255, 0.6);
+        right: 30px; /* Position the check button 30px from the right */
+        top: 0;
+        cursor: pointer;
+    }
+
+    .xqdd_bubble_check:hover {
+        color: #4CAF50; /* Change color on hover */
+    }
+    .click-underline {
+        text-decoration: underline !important;
     }
 `;
 
@@ -216,23 +264,48 @@ function paw_annotation_mode_disable() {
 function createBubble() {
     //创建添加到body中
     var div = $("<div>").attr("class", "xqdd_bubble");
+
+    var checkButton = $("<span>")
+        .attr("class", "xqdd_bubble_check")
+        .text("✔")
+        .click(() => {
+            var $currentNode = $(`xqdd_highlight_new_word[word='${currWordData.word}']`);
+            if ($currentNode.length > 0) {
+                var element = $currentNode[0]; // Get the actual DOM element from jQuery object
+                var range = document.createRange();
+                var selection = window.getSelection();
+
+                // Clear any existing selections
+                selection.removeAllRanges();
+
+                // Set the range to encompass the content of the element
+                range.selectNodeContents(element);
+
+                // Add the range to the selection
+                selection.addRange(range);
+
+                var entry = paw_new_entry();
+                if (entry !== "") {
+                    window.pyobject.paw_view_note(entry);
+                }
+
+                selection.removeAllRanges();
+            }
+
+        });
+
     var deleteButton = $("<span>")
         .attr("class", "xqdd_bubble_delete")
         .text("✖")
         .click(() => {
-            if (window.confirm("确认删除单词？（若已登录云端，云端单词会同时删除）")) {
-                // chrome.runtime.sendMessage({type: "delete", wordData: currWordData}, function (msg) {
-                //     //取消高亮删除的单词
-                //     $(`xqdd_highlight_new_word[word='${currWordData.word}']`).attr("class", "xqdd_highlight_disable")
-                //     if (msg) {
-                //         // alert(msg)
-                //     }
-                // })
+            if (window.confirm(`Delete word: ${currWordData.word}?`)) {
             }
         });
     var word = $("<span>").attr("class", "xqdd_bubble_word");
-    var trans = $("<span>").attr("class", "xqdd_bubble_trans");
-    div.append(deleteButton).append(word).append(trans);
+    var exp = $("<span>").attr("class", "xqdd_bubble_exp");
+    var origin_path = $("<span>").attr("class", "xqdd_bubble_origin_path");
+    var note = $("<span>").attr("class", "xqdd_bubble_note");
+    div.append(checkButton).append(deleteButton).append(word).append(exp).append(origin_path).append(note);
     $(document.body).append(div);
 
     //添加鼠标进入离开事件
@@ -264,8 +337,10 @@ function showBubble() {
             var nodeRect = currNode.getBoundingClientRect();
             var word = $(currNode).text();
             var wordInfo = newWords.wordInfos[word.toLowerCase()];
-            $(".xqdd_bubble_word").html((wordInfo.link ? wordInfo.link : wordInfo.word) + "  " + `<span>${wordInfo["phonetic"]}</span>`);
-            $(".xqdd_bubble_trans").html(wordInfo["trans"]);
+            $(".xqdd_bubble_word").html((wordInfo.link ? wordInfo.link : wordInfo.word));
+            $(".xqdd_bubble_exp").html(`<span>${wordInfo["exp"]}</span>`);
+            $(".xqdd_bubble_origin_path").html(`<span>${wordInfo["origin_path"]}</span>`);
+            $(".xqdd_bubble_note").html(wordInfo["note"]);
             currWord = wordInfo["word"];
             currWordData = wordInfo;
             bubble
@@ -829,6 +904,44 @@ function enable_clickable_word() {
 }
 
 function load_clickable_word_events() {
+    var backtickKeyPressed = false;
+    $(document).keydown(function(e) {
+        if(e.which === 192) { // 192 is the keyCode for `
+            backtickKeyPressed = !backtickKeyPressed; // Toggle the flag
+        }
+    });
+
+    // Flag to track shift key status
+    var shiftKeyPressed = false;
+
+    $(document).keydown(function(e) {
+        if(e.which === 16) { // 16 is the keyCode for Shift
+            shiftKeyPressed = true;
+            console.log("Shift key pressed");
+        }
+    });
+
+    $(document).keyup(function(e) {
+        if(e.which === 16) {
+            shiftKeyPressed = false;
+            console.log("Shift key released");
+        }
+    });
+    $(document).on('mouseenter', '.xqaa_clickable_word', function() {
+        if(backtickKeyPressed) {
+            var selection = window.getSelection(),
+                range = document.createRange();
+            range.selectNodeContents(this);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            var entry = paw_new_entry();
+            if (entry !== "") {
+                window.pyobject.paw_view_note(entry);
+            }
+        }
+    });
+
+
     $(document).on('click', '.xqaa_clickable_word', function() {
         var selection = window.getSelection(),
             range = document.createRange();

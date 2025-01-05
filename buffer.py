@@ -928,9 +928,24 @@ class Paw (object):
 
     def candidates(self):
         with self.__conn:
-            self.cursor.execute("SELECT * FROM items")
+            # Define the SQL query to join the items and status tables
+            self.cursor.execute("""
+                SELECT items.word, items.exp, status.origin_path, status.note
+                FROM items
+                JOIN status ON items.word = status.word
+            """)
             items = self.cursor.fetchall()
-            if items is None:
+            if not items:
                 raise Exception("No items found")
-            words = { item[0].strip('\"'): { "word": item[0].strip('\"'), "phonetic": "", "trans": "" if item[1] is None else item[1].strip('\"') } for item in items }
+
+            # Process the fetched items into the desired dictionary format
+            words = {
+                item[0].strip('"'): {
+                    "word": item[0].strip('\"'),
+                    "exp": "" if item[1] is None else item[1].strip('\"'),
+                    "origin_path": "" if item[2] is None else os.path.basename(item[2].strip('\"')),  # origin_path from status table
+                    "note": "" if item[3] is None else item[3].strip('\"')      # note from status table
+                }
+                for item in items
+            }
             return words
