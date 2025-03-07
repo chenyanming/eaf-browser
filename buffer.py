@@ -763,6 +763,15 @@ class AppBuffer(BrowserBuffer):
 
 
     @interactive(insert_or_do=True)
+    def wallabag_add_entry(self):
+        eval_in_emacs('wallabag-add-entry', [self.url])
+
+    @interactive(insert_or_do=True)
+    def wallabag_insert_entry(self):
+        html = self.buffer_widget.execute_js("document.documentElement.outerHTML;")
+        eval_in_emacs('wallabag-insert-entry', [self.url, self.title, html])
+
+    @interactive(insert_or_do=True)
     def render_by_eww(self):
         self.load_readability_js()
 
