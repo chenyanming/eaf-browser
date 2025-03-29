@@ -101,6 +101,7 @@ class AppBuffer(BrowserBuffer):
         self.qwebchannel_js = None
         self.jquery_js = None
         self.is_paw_annotation_mode = True # enable paw annotation mode at the begnning
+        self.is_paw_annotation_mode_click = False # enable single click paw annotation mode
 
         self.buffer_widget.init_dark_mode_js(__file__,
                                              self.text_selection_color,
@@ -740,6 +741,18 @@ class AppBuffer(BrowserBuffer):
         self.load_paw_js()
         self.buffer_widget.execute_js("paw_annotation_mode_disable();")
         message_to_emacs("Disable paw-annotation-mode on eaf")
+
+
+    @interactive(insert_or_do=True)
+    def paw_annotation_mode_click_toggle(self):
+        if (self.is_paw_annotation_mode_click):
+            self.is_paw_annotation_mode_click = False;
+            self.buffer_widget.execute_js("disable_clickable_word();")
+            message_to_emacs("Disable paw-annotation-mode-click on eaf")
+        else:
+            self.is_paw_annotation_mode_click = True;
+            self.buffer_widget.execute_js("enable_clickable_word();")
+            message_to_emacs("Enable paw-annotation-mode-click on eaf")
 
     @interactive(insert_or_do=True)
     def paw_view_note_in_eaf(self):
